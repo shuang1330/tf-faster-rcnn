@@ -36,6 +36,8 @@ class Network(object):
     self._score_summaries = {}
     self._train_summaries = []
     self._event_summaries = {}
+    self._filter_num = []
+    self._act = []
 
   def _add_image_summary(self, image, boxes):
     # add back mean
@@ -56,7 +58,7 @@ class Network(object):
     assert image.get_shape()[0] == 1
     boxes = tf.expand_dims(boxes, dim=0)
     image = tf.image.draw_bounding_boxes(image, boxes)
-    
+
     return tf.summary.image('ground_truth', image)
 
   def _add_act_summary(self, tensor):
@@ -268,7 +270,8 @@ class Network(object):
     return loss
 
   def create_architecture(self, sess, mode, num_classes, tag=None,
-                          anchor_scales=(8, 16, 32), anchor_ratios=(0.5, 1, 2)):
+                          anchor_scales=(8, 16, 32), anchor_ratios=(0.5, 1, 2),
+                          filter_num = (64,64,128,128,256,256,256,512,512,512,512,512,512,512)):
     self._image = tf.placeholder(tf.float32, shape=[self._batch_size, None, None, 3])
     self._im_info = tf.placeholder(tf.float32, shape=[self._batch_size, 3])
     self._gt_boxes = tf.placeholder(tf.float32, shape=[None, 5])
@@ -284,6 +287,8 @@ class Network(object):
 
     self._num_anchors = self._num_scales * self._num_ratios
 
+    self._filter_num = filter_num
+
     training = mode == 'TRAIN'
     testing = mode == 'TEST'
 
@@ -298,10 +303,10 @@ class Network(object):
 
     # list as many types of layers as possible, even if they are not used now
     with arg_scope([slim.conv2d, slim.conv2d_in_plane, \
-                    slim.conv2d_transpose, slim.separable_conv2d, slim.fully_connected], 
+                    slim.conv2d_transpose, slim.separable_conv2d, slim.fully_connected],
                     weights_regularizer=weights_regularizer,
-                    biases_regularizer=biases_regularizer, 
-                    biases_initializer=tf.constant_initializer(0.0)): 
+                    biases_regularizer=biases_regularizer,
+                    biases_initializer=tf.constant_initializer(0.0)):
       rois, cls_prob, bbox_pred = self.build_network(sess, training)
 
     layers_to_output = {'rois': rois}
@@ -320,6 +325,7 @@ class Network(object):
       layers_to_output.update(self._losses)
 
     val_summaries = []
+    test_summaries = []
     with tf.device("/cpu:0"):
       val_summaries.append(self._add_image_summary(self._image, self._gt_boxes))
       for key, var in self._event_summaries.items():
@@ -330,10 +336,19 @@ class Network(object):
         self._add_act_summary(var)
       for var in self._train_summaries:
         self._add_train_summary(var)
+      for var in self._act:
+        # print(type(var))
+        # print(type(self._add_act_summary(var)))
+        test_summaries.append(tf.summary.histogram('ACT/' + var.op.name + '/activations', var))
+        test_summaries.append(tf.summary.scalar('ACT/' + var.op.name + '/zero_fraction',
+                          tf.nn.zero_fraction(var)))
+
 
     self._summary_op = tf.summary.merge_all()
     if not testing:
       self._summary_op_val = tf.summary.merge(val_summaries)
+    if testing:
+      self._test_summaries = tf.summary.merge(test_summaries)
 
     return layers_to_output
 
@@ -348,12 +363,14 @@ class Network(object):
   def test_image(self, sess, image, im_info):
     feed_dict = {self._image: image,
                  self._im_info: im_info}
-    cls_score, cls_prob, bbox_pred, rois = sess.run([self._predictions["cls_score"],
-                                                     self._predictions['cls_prob'],
-                                                     self._predictions['bbox_pred'],
-                                                     self._predictions['rois']],
-                                                    feed_dict=feed_dict)
-    return cls_score, cls_prob, bbox_pred, rois
+    cls_score, cls_prob, bbox_pred, rois, acts = \
+    sess.run([self._predictions["cls_score"],\
+    self._predictions['cls_prob'],\
+    self._predictions['bbox_pred'],\
+    self._predictions['rois'],\
+    self._act],\
+    feed_dict=feed_dict)
+    return cls_score, cls_prob, bbox_pred, rois, acts
 
   def get_summary(self, sess, blobs):
     feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],
@@ -391,4 +408,3 @@ class Network(object):
     feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],
                  self._gt_boxes: blobs['gt_boxes']}
     sess.run([train_op], feed_dict=feed_dict)
-

@@ -21,6 +21,13 @@ from nets.resnet_v1 import resnetv1
 
 import tensorflow.contrib.slim as slim
 
+def name_in_checkpoint(var):
+  if 'weights' in var.op.name:
+    return 'vgg16_default'+var.op.name.replace('weights','weight')[6:]
+  if 'biases' in var.op.name:
+    return 'vgg16_default   '+var.op.name.replace('biases','bias')[6:]
+
+
 def parse_args():
   """
   Parse input arguments
@@ -108,13 +115,16 @@ if __name__ == '__main__':
                           anchor_scales=cfg.ANCHOR_SCALES,
                           anchor_ratios=cfg.ANCHOR_RATIOS)
 
-  variables_to_restore = slim.get_variables_to_restore()
+  # variables_to_restore = slim.get_variables_to_restore()
+  # for var in variables_to_restore:
+    # print(var.op.name)
   if args.model:
     print(('Loading model check point from {:s}').format(args.model))
-    # saver = tf.train.Saver()
-    # saver.restore(sess, args.model)
-    init_assign_op, init_feed_dict = slim.assign_from_checkpoint(args.model, variables_to_restore)
-    sess.run(init_assign_op,init_feed_dict)
+    saver = tf.train.Saver()
+    saver.restore(sess, args.model)
+    # variables_to_restore = {name_in_checkpoint(var):var for var in variables_to_restore}
+    # init_assign_op, init_feed_dict = slim.assign_from_checkpoint(args.model, variables_to_restore)
+    # sess.run(init_assign_op,init_feed_dict)
     print('Loaded.')
   else:
     print(('Loading initial weights from {:s}').format(args.weight))
