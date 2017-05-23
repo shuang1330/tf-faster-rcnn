@@ -8,3 +8,8 @@ lib/pycocotools/_mask.c
 lib/pycocotools/_mask.so
 .idea
 activations
+output
+tensorboard
+data/PythonAPI
+data/VOCdevkit2007
+.remote-sync.json
