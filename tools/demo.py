@@ -101,11 +101,14 @@ def demo(sess, net, image_name):
 if __name__ == '__main__':
     cfg_file = '../experiments/cfgs/vgg16.yml'
     imdb_name = 'voc_2007_test'
+    # imdb_name = 'coco_2014_minival'
     net = 'vgg16'
     comp_mode=False
     max_per_image=300
+    # model = \
+    # '../output/vgg16/voc_2007_trainval/default/vgg16_faster_rcnn_iter_70000.ckpt'
     model = \
-    '../output/vgg16/voc_2007_trainval/default/vgg16_faster_rcnn_iter_70000.ckpt'
+    '../../pretrained_weights/coco_2014_train+coco_2014_valminusminival/vgg16_faster_rcnn_iter_1190000.ckpt'
     set_cfgs=['ANCHOR_SCALES', '[8,16,32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
     tag = ''
 
