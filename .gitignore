@@ -13,3 +13,6 @@ tensorboard
 data/PythonAPI
 data/VOCdevkit2007
 .remote-sync.json
+lib/setup.py
+lib/Makefile
+lib/model/nms_wrapper.py
