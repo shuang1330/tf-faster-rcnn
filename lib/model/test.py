@@ -164,7 +164,7 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
   # writer = tf.summary.FileWriter(test_tbdir,sess.graph)
 
   # define a folder for activation results
-  test_actdir = '/home/shuang/projects/tf-faster-rcnn/activations'
+  test_actdir = './activations'
   if not os.path.exists(test_actdir):
     print('making directory for test tensorboard result')
     os.mkdir(test_actdir)
@@ -182,6 +182,7 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
     _t['misc'].tic()
 
     # skip j = 0, because it's the background class
+    chosen_classes = []
     for j in range(1, imdb.num_classes):
     # for j, clas in enumerate(imdb._classes[1:]):
       inds = np.where(scores[:, j] > thresh)[0]
@@ -192,7 +193,9 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
       keep = nms(cls_dets, cfg.TEST.NMS)
       cls_dets = cls_dets[keep, :]
       all_boxes[j][i] = cls_dets
-      print(imdb._classes[j],cls_dets)
+      if len(cls_dets)!=0:
+        chosen_classes.append(imdb._classes[j])
+    #   print(imdb._classes[j],cls_dets)
 
 
     # Limit to max_per_image detections *over all classes*
@@ -208,18 +211,23 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
 
     # write acts to a seperate text file for each seprate image file
     f_name = '{}/{}.txt'.format(test_actdir,i)
-    print(f_name)
     act_file = open(f_name,'w')
     # print(image_scores)
     # print(len(acts))
     # act_file.write(cls_dets)
     # act_file.writelines(acts)
+    act_file.write('\n'.join(chosen_classes))
+    act_file.write('\n')
     sum_act = []
+    # print(acts[0].shape)
     for arr in acts:
-      sum_act.append(np.sum(arr))
+      temp = np.sum(arr,axis = (0,1,2))
+    #   print(temp.shape)
+      sum_act.append(temp)
     for item in sum_act:
-      act_file.write('{} '.format(str(item)))
+      act_file.write('{}\n'.format(str(item)))
     act_file.close()
+    chosen_classes = []
 
     print('im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
         .format(i + 1, num_images, _t['im_detect'].average_time,
