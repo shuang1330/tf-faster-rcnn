@@ -16,3 +16,4 @@ data/VOCdevkit2007
 lib/setup.py
 lib/Makefile
 lib/model/nms_wrapper.py
+data/demo
