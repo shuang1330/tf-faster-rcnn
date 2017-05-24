@@ -1,34 +1,33 @@
-#!/usr/bin/env python
-
 # --------------------------------------------------------
 # Tensorflow Faster R-CNN
 # Licensed under The MIT License [see LICENSE for details]
-# Written by Xinlei Chen, based on code from Ross Girshick
+# Written by Zheqi he, Xinlei Chen, based on code from Ross Girshick
 # --------------------------------------------------------
-
-"""
-Demo script showing detections in sample images.
-
-See README.md for installation instructions before running.
-"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import _init_paths
-from model.config import cfg
-from model.test_vgg16 import im_detect
-from model.nms_wrapper import nms
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
-from utils.timer import Timer
-import tensorflow as tf
-import matplotlib.pyplot as plt
-import numpy as np
-import os, cv2
+from model.test import test_net
+from model.config import cfg, cfg_from_file, cfg_from_list
+from datasets.factory import get_imdb
 import argparse
+import pprint
+import time, os, sys
+import os, cv2
+from model.test import im_detect
+import numpy as np
+from utils.timer import Timer
+from model.nms_wrapper import nms
+import matplotlib.pyplot as plt
 
+import tensorflow as tf
 from nets.vgg16 import vgg16
-from nets.resnet_v1 import resnetv1
 
 CLASSES = ('__background__',
            'aeroplane', 'bicycle', 'bird', 'boat',
@@ -82,7 +81,7 @@ def demo(sess, net, image_name):
     # Detect all object classes and regress object bounds
     timer = Timer()
     timer.tic()
-    scores, boxes = im_detect(sess, net, im)
+    scores, boxes, _ = im_detect(sess, net, im)
     timer.toc()
     print('Detection took {:.3f}s for {:d} object proposals'.format(timer.total_time, boxes.shape[0]))
 
@@ -99,55 +98,52 @@ def demo(sess, net, image_name):
         dets = dets[keep, :]
         vis_detections(im, cls, dets, thresh=CONF_THRESH)
 
-def parse_args():
-    """Parse input arguments."""
-    parser = argparse.ArgumentParser(description='Tensorflow Faster R-CNN demo')
-    parser.add_argument('--net', dest='demo_net', help='Network to use [vgg16 res101]',
-                        choices=NETS.keys(), default='res101')
-    parser.add_argument('--dataset', dest='dataset', help='Trained dataset [pascal_voc pascal_voc_0712]',
-                        choices=DATASETS.keys(), default='pascal_voc_0712')
-    args = parser.parse_args()
-
-    return args
-
 if __name__ == '__main__':
-    cfg.TEST.HAS_RPN = True  # Use RPN for proposals
-    args = parse_args()
+    cfg_file = '../experiments/cfgs/vgg16.yml'
+    imdb_name = 'voc_2007_test'
+    net = 'vgg16'
+    comp_mode=False
+    max_per_image=300
+    model = \
+    '../output/vgg16/voc_2007_trainval/default/vgg16_faster_rcnn_iter_70000.ckpt'
+    set_cfgs=['ANCHOR_SCALES', '[8,16,32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
+    tag = ''
 
-    # model path
-    demonet = args.demo_net
-    dataset = args.dataset
-    tfmodel = os.path.join('output', demonet, DATASETS[dataset][0], 'default',
-                              NETS[demonet][0])
+    cfg_from_file(cfg_file)
 
+    print('Using config:')
+    pprint.pprint(cfg)
 
-    if not os.path.isfile(tfmodel + '.meta'):
-        raise IOError(('{:s} not found.\nDid you download the proper networks from '
-                       'our server and place them properly? If you want something '
-                       'simple and handy, try ./tools/demo_depre.py first.').format(tfmodel + '.meta'))
+    filename = os.path.splitext(os.path.basename(model))[0]
 
-    # set config
+    tag = tag if tag else 'default'
+    filename = tag + '/' + filename
+
+    imdb = get_imdb(imdb_name)
+    imdb.competition_mode(comp_mode)##############################
+    print('imdb.competiton_mode: {}'.format(imdb.competition_mode))
+
     tfconfig = tf.ConfigProto(allow_soft_placement=True)
     tfconfig.gpu_options.allow_growth=True
 
     # init session
     sess = tf.Session(config=tfconfig)
     # load network
-    if demonet == 'vgg16':
-        net = vgg16(batch_size=1)
-    elif demonet == 'res101':
-        net = resnetv1(batch_size=1, num_layers=101)
-    else:
-        raise NotImplementedError
-    net.create_architecture(sess, "TEST", 21,
-                          tag='default', anchor_scales=[8, 16, 32])
+    net = vgg16(batch_size=1)
+    # load model
+    net.create_architecture(sess, "TEST", imdb.num_classes, tag='default',
+                            anchor_scales=cfg.ANCHOR_SCALES,
+                            anchor_ratios=cfg.ANCHOR_RATIOS,
+                            filter_num = (64,64,128,128,256,256,256,\
+                            512,512,512,512,512,512,512))
+
+    print(('Loading model check point from {:s}').format(model))
     saver = tf.train.Saver()
-    saver.restore(sess, tfmodel)
+    saver.restore(sess, model)
+    print('Loaded.')
 
-    print('Loaded network {:s}'.format(tfmodel))
-
-    im_names = ['000456.jpg', '000542.jpg', '001150.jpg',
-                '001763.jpg', '004545.jpg']
+    im_names = ['frame-080.jpg']#, '000542.jpg', '001150.jpg',
+                #'001763.jpg', '004545.jpg']
     for im_name in im_names:
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         print('Demo for data/demo/{}'.format(im_name))
