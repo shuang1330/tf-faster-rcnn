@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from nets.vgg16 import vgg16
 
+
 CLASSES = ('__background__',
            'aeroplane', 'bicycle', 'bird', 'boat',
            'bottle', 'bus', 'car', 'cat', 'chair',
@@ -82,12 +83,15 @@ def demo(sess, net, image_name):
     timer = Timer()
     timer.tic()
     scores, boxes, _ = im_detect(sess, net, im)
+    print(np.array(scores).shape)
+    print(CLASSES)
     timer.toc()
     print('Detection took {:.3f}s for {:d} object proposals'.format(timer.total_time, boxes.shape[0]))
 
     # Visualize detections for each class
     CONF_THRESH = 0.8
     NMS_THRESH = 0.3
+
     for cls_ind, cls in enumerate(CLASSES[1:]):
         cls_ind += 1 # because we skipped background
         cls_boxes = boxes[:, 4*cls_ind:4*(cls_ind + 1)]
@@ -109,7 +113,7 @@ if __name__ == '__main__':
     # '../output/vgg16/voc_2007_trainval/default/vgg16_faster_rcnn_iter_70000.ckpt'
     model = \
     '../../pretrained_weights/coco_2014_train+coco_2014_valminusminival/vgg16_faster_rcnn_iter_1190000.ckpt'
-    set_cfgs=['ANCHOR_SCALES', '[8,16,32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
+    set_cfgs={'ANCHOR_SCALES':[8,16,32], 'ANCHOR_RATIOS':[0.5,1,2]}
     tag = ''
 
     cfg_from_file(cfg_file)
@@ -135,10 +139,8 @@ if __name__ == '__main__':
     net = vgg16(batch_size=1)
     # load model
     net.create_architecture(sess, "TEST", imdb.num_classes, tag='default',
-                            anchor_scales=cfg.ANCHOR_SCALES,
-                            anchor_ratios=cfg.ANCHOR_RATIOS,
-                            filter_num = (64,64,128,128,256,256,256,\
-                            512,512,512,512,512,512,512))
+                            anchor_scales=set_cfgs[ANCHOR_SCALES],
+                            anchor_ratios=set_cfgs[ANCHOR_RATIOS])
 
     print(('Loading model check point from {:s}').format(model))
     saver = tf.train.Saver()
