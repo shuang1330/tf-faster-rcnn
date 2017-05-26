@@ -1,8 +1,10 @@
+# %%
 import os.path
 import matplotlib.pyplot as plt
 import numpy as np
 
-path = '../activations'
+# %%
+path = '/home/shuang/projects/tf-faster-rcnn/activations'
 num_files = len([f for f in os.listdir(path)
                 if os.path.isfile(os.path.join(path, f))])
 CLASSES = ('__background__',
@@ -11,11 +13,24 @@ CLASSES = ('__background__',
            'cow', 'diningtable', 'dog', 'horse',
            'motorbike', 'person', 'pottedplant',
            'sheep', 'sofa', 'train', 'tvmonitor')
-arr_hm = np.empty([num_files,21,64], dtype=float)
+# arr_hm = np.empty([num_files,21,64], dtype=float)
+
+arr_hm = [np.empty([num_files,21,64], dtype=float),
+            np.empty([num_files,21,64], dtype=float),
+            np.empty([num_files,21,128], dtype=float),
+            np.empty([num_files,21,128], dtype=float),
+            np.empty([num_files,21,256], dtype=float),
+            np.empty([num_files,21,256], dtype=float),
+            np.empty([num_files,21,256], dtype=float),
+            np.empty([num_files,21,512], dtype=float),
+            np.empty([num_files,21,512], dtype=float),
+            np.empty([num_files,21,512], dtype=float),
+            np.empty([num_files,21,512], dtype=float),
+            np.empty([num_files,21,512], dtype=float),
+            np.empty([num_files,21,512], dtype=float)]
+
+# %%
 for filename in os.listdir(path):
-# for filename in ['0.txt']:
-# for file_ind in range(num_files):
-    # filename = '{}.txt'.format(file_ind)
     print 'processing file {}'.format(filename)
     clas = []
     acts = []
@@ -50,7 +65,22 @@ for filename in os.listdir(path):
     for ind,item in enumerate(CLASSES[1:]):
         if item in clas:
             file_ind = int(filename[:-4])
-            arr_hm[file_ind][ind] = acts[0]
+            for j in range(13):
+                arr_hm[j][file_ind][ind] = acts[j]
 
+# print len(arr_hm)
+# print arr_hm[1]
 
-print arr_hm.shape
+# %%
+for i in range(11,12):
+    mask = np.ma.masked_where(arr_hm[i]!=0,arr_hm[i])
+    arr_hm_mask = np.ma.array(arr_hm[i],mask=mask)
+    arr_hm_new = np.average(arr_hm_mask, axis=0)
+
+    plt.imshow(arr_hm_new)
+    plt.savefig('{}.png'.format(i))
+
+# %%
+fig,ax = plt.subplots()
+heatmap = ax.pcolor(arr_hm_new,cmap=plt.cm.Blues,alpha=0.8)
+plt.show(heatmap)
