@@ -221,6 +221,7 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
     sum_act = []
     # print(acts[0].shape)
     for arr in acts:
+      print(arr.shape)
       temp = np.sum(arr,axis = (0,1,2))
     #   print(temp.shape)
       sum_act.append(temp)
