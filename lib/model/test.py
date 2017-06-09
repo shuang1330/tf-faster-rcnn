@@ -166,8 +166,11 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
   # define a folder for activation results
   test_actdir = './activations'
   if not os.path.exists(test_actdir):
-    print('making directory for test tensorboard result')
     os.mkdir(test_actdir)
+  # define a folder for zero fractions
+  test_zerodir = './zero_fractions'
+  if not os.path.exists(test_zerodir):
+    os.mkdir(test_zerodir)
 
   for i in range(num_images):
     im = cv2.imread(imdb.image_path_at(i))
@@ -178,6 +181,16 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
 
     # write act summaries to tensorboard
     # writer.add_summary(act_summaries)
+
+    # record the zero fraction
+    zero_frac = []
+    for layer_ind in range(13):
+      batch_num,row,col,filter_num = acts[layer_ind].shape
+      zero_frac.append([])
+      for j in range(filter_num):
+        # print(acts[0][:,:,:,i].shape)
+        fraction = 1-np.count_nonzero(acts[layer_ind][:,:,:,j])/(batch_num*row*col)
+        zero_frac[layer_ind].append(fraction)
 
     _t['misc'].tic()
 
@@ -195,7 +208,6 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
       all_boxes[j][i] = cls_dets
       if len(cls_dets)!=0:
         chosen_classes.append(imdb._classes[j])
-    #   print(imdb._classes[j],cls_dets)
 
 
     # Limit to max_per_image detections *over all classes*
@@ -209,26 +221,30 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
           all_boxes[j][i] = all_boxes[j][i][keep, :]
     _t['misc'].toc()
 
-    # write acts to a seperate text file for each seprate image file
-    f_name = '{}/{}.txt'.format(test_actdir,i)
-    act_file = open(f_name,'w')
-    # print(image_scores)
-    # print(len(acts))
-    # act_file.write(cls_dets)
-    # act_file.writelines(acts)
-    act_file.write('\n'.join(chosen_classes))
-    act_file.write('\n')
-    sum_act = []
-    # print(acts[0].shape)
-    for arr in acts:
-      print(arr.shape)
-      temp = np.sum(arr,axis = (0,1,2))
-    #   print(temp.shape)
-      sum_act.append(temp)
-    for item in sum_act:
-      act_file.write('{}\n'.format(str(item)))
-    act_file.close()
+    # # write acts to a seperate text file for each seprate image file
+    # f_name = '{}/{}.txt'.format(test_actdir,i)
+    # act_file = open(f_name,'w')
+    # act_file.write('\n'.join(chosen_classes))
+    # act_file.write('\n')
+    # sum_act = []
+    # for arr in acts:
+    #   temp = np.sum(arr,axis = (0,1,2))
+    #   sum_act.append(temp)
+    # for item in sum_act:
+    #   act_file.write('{}\n'.format(str(item)))
+    # act_file.close()
+    # chosen_classes = []
+
+    # write zero fractions to text files
+    file_name = '{}/{}.txt'.format(test_zerodir,i)
+    zero_file = open(file_name,'w')
+    zero_file.write('\n'.join(chosen_classes))
+    zero_file.write('\n')
+    for arr in zero_frac:
+      zero_file.write('{}\n'.format(str(arr)))
+    zero_file.close()
     chosen_classes = []
+
 
     print('im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
         .format(i + 1, num_images, _t['im_detect'].average_time,

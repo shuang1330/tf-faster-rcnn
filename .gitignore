@@ -19,3 +19,5 @@ lib/model/nms_wrapper.py
 data/demo
 images/
 tools/*.png
+zero_fractions/
+
