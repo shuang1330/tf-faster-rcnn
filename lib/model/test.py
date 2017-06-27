@@ -142,7 +142,8 @@ def apply_nms(all_boxes, thresh):
       nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
   return nms_boxes
 
-def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
+def test_net(sess, net, imdb, weights_filename, experiment_setup=None,
+            max_per_image=100, thresh=0.05):
   np.random.seed(cfg.RNG_SEED)
   """Test a Fast R-CNN network on an image database."""
   num_images = len(imdb.image_index)
@@ -182,15 +183,15 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
     # write act summaries to tensorboard
     # writer.add_summary(act_summaries)
 
-    # record the zero fraction
-    zero_frac = []
-    for layer_ind in range(13):
-      batch_num,row,col,filter_num = acts[layer_ind].shape
-      zero_frac.append([])
-      for j in range(filter_num):
-        # print(acts[0][:,:,:,i].shape)
-        fraction = 1-np.count_nonzero(acts[layer_ind][:,:,:,j])/(batch_num*row*col)
-        zero_frac[layer_ind].append(fraction)
+    # record the zero fraction -> only for vgg16
+    # zero_frac = []
+    # for layer_ind in range(13):
+    #   batch_num,row,col,filter_num = acts[layer_ind].shape
+    #   zero_frac.append([])
+    #   for j in range(filter_num):
+    #     # print(acts[0][:,:,:,i].shape)
+    #     fraction = 1-np.count_nonzero(acts[layer_ind][:,:,:,j])/(batch_num*row*col)
+    #     zero_frac[layer_ind].append(fraction)
 
     _t['misc'].tic()
 
@@ -206,8 +207,8 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
       keep = nms(cls_dets, cfg.TEST.NMS)
       cls_dets = cls_dets[keep, :]
       all_boxes[j][i] = cls_dets
-      if len(cls_dets)!=0:
-        chosen_classes.append(imdb._classes[j])
+    #   if len(cls_dets)!=0: # only vgg
+    #     chosen_classes.append(imdb._classes[j])
 
 
     # Limit to max_per_image detections *over all classes*
@@ -221,7 +222,7 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
           all_boxes[j][i] = all_boxes[j][i][keep, :]
     _t['misc'].toc()
 
-    # # write acts to a seperate text file for each seprate image file
+    # write acts to a seperate text file for each seprate image file -> only vgg
     # f_name = '{}/{}.txt'.format(test_actdir,i)
     # act_file = open(f_name,'w')
     # act_file.write('\n'.join(chosen_classes))
@@ -235,20 +236,20 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
     # act_file.close()
     # chosen_classes = []
 
-    # write zero fractions to text files
-    file_name = '{}/{}.txt'.format(test_zerodir,i)
-    zero_file = open(file_name,'w')
-    zero_file.write('\n'.join(chosen_classes))
-    zero_file.write('\n')
-    for arr in zero_frac:
-      zero_file.write('{}\n'.format(str(arr)))
-    zero_file.close()
-    chosen_classes = []
+    # write zero fractions to text files -> only vgg
+    # file_name = '{}/{}.txt'.format(test_zerodir,i)
+    # zero_file = open(file_name,'w')
+    # zero_file.write('\n'.join(chosen_classes))
+    # zero_file.write('\n')
+    # for arr in zero_frac:
+    #   zero_file.write('{}\n'.format(str(arr)))
+    # zero_file.close()
+    # chosen_classes = []
 
-
-    print('im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
-        .format(i + 1, num_images, _t['im_detect'].average_time,
-            _t['misc'].average_time))
+    if i%100==0:
+        print('im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
+            .format(i + 1, num_images, _t['im_detect'].average_time,
+                _t['misc'].average_time))
 
   # writer.close()
   det_file = os.path.join(output_dir, 'detections.pkl')
@@ -256,4 +257,4 @@ def test_net(sess, net, imdb, weights_filename, max_per_image=100, thresh=0.05):
     pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
 
   print('Evaluating detections')
-  imdb.evaluate_detections(all_boxes, output_dir)
+  imdb.evaluate_detections(all_boxes, output_dir, experiment_setup)
