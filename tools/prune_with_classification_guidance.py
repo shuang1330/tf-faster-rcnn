@@ -11,9 +11,6 @@ CLASSES = ('__background__',
 class_to_ind = dict(list(zip(CLASSES, list(range(len(CLASSES))))))
 SUB_CLAS = ('bicycle', 'bus', 'car','motorbike', 'person', 'train')
 
-# define path for loading the activations_versus_classes array
-hm_path = './activations_res/res.npy'
-
 def rankmin(x):
     u, inv, counts = np.unique(x, return_inverse=True, return_counts=True)
     csum = np.zeros_like(counts)
@@ -45,7 +42,7 @@ def detect_diff_one_layer(norm_hm_one_layer):
             temp[temp>0.5] = 1
             # diff_ind[clas] = np.argsort(temp)
             diff_ind += temp
-    # diff_ind = np.argsort(diff_ind)
+    diff_ind = np.argsort(diff_ind)[::-1]
     return diff_ind
 
 def detect_diff_all(hm_path):
@@ -61,6 +58,9 @@ def detect_diff_all(hm_path):
     return hm_ind
 
 if __name__=='__main__':
+    # define path for loading the activations_versus_classes array
+    hm_path = './activations_res/res.npy'
     hm_sorted = detect_diff_all(hm_path)
     for key in hm_sorted:
-        print key, np.count_nonzero(hm_sorted[key])
+        print key,hm_sorted[key].shape
+        # print key, np.count_nonzero(hm_sorted[key])
