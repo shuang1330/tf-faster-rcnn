@@ -1,4 +1,4 @@
-.ipynb
+*.ipynb_checkpoints*
 tools/activations_res/*
 *.tgz
 *.so
