@@ -37,7 +37,8 @@ class pascal_voc(imdb):
                      'cow', 'diningtable', 'dog', 'horse',
                      'motorbike', 'person', 'pottedplant',
                      'sheep', 'sofa', 'train', 'tvmonitor')
-    self._class_to_ind = dict(list(zip(self.classes, list(range(self.num_classes)))))
+    self._class_to_ind = dict(list(zip(self.classes,
+                            list(range(self.num_classes)))))
     self._image_ext = '.jpg'
     self._image_index = self._load_image_set_index()
     # Default to roidb handler
@@ -196,6 +197,17 @@ class pascal_voc(imdb):
       'VOC' + self._year,
       'Main',
       filename)
+    # temporary_folder = os.path.join(
+    #   cfg.ROOT_DIR,
+    #   'temp_output',
+    #   'results',
+    #   'VOC' + self._year,
+    #   'Main')
+    # if not os.path.exists(temporary_folder):
+    #   os.makedirs(temporary_folder)
+    # path = os.path.join(
+    #   temporary_folder,
+    #   filename)
     return path
 
   def _write_voc_results_file(self, all_boxes):
@@ -206,6 +218,7 @@ class pascal_voc(imdb):
       filename = self._get_voc_results_file_template().format(cls)
       with open(filename, 'wt') as f:
         for im_ind, index in enumerate(self.image_index):
+        # for im_ind, index in enumerate(self.image_index[:2]):
           dets = all_boxes[cls_ind][im_ind]
           if dets == []:
             continue
@@ -216,7 +229,7 @@ class pascal_voc(imdb):
                            dets[k, 0] + 1, dets[k, 1] + 1,
                            dets[k, 2] + 1, dets[k, 3] + 1))
 
-  def _do_python_eval(self, output_dir='output'):
+  def _do_python_eval(self, output_dir='output',experiment_setup='.'):
     annopath = os.path.join(
       self._devkit_path,
       'VOC' + self._year,
@@ -229,6 +242,7 @@ class pascal_voc(imdb):
       'Main',
       self._image_set + '.txt')
     cachedir = os.path.join(self._devkit_path, 'annotations_cache')
+    # cachedir = os.path.join(cfg.ROOT_DIR,'temp_output','annotation_cache')
     aps = []
     # The PASCAL VOC metric changed in 2010
     use_07_metric = True if int(self._year) < 2010 else False
@@ -244,8 +258,11 @@ class pascal_voc(imdb):
         use_07_metric=use_07_metric)
       aps += [ap]
       print(('AP for {} = {:.4f}'.format(cls, ap)))
-      with open(os.path.join(output_dir, cls + '_pr.pkl'), 'wb') as f:
+      if not os.path.exists(os.path.join(output_dir, '%s'%experiment_setup)):
+        os.makedirs(os.path.join(output_dir, '%s'%experiment_setup))
+      with open(os.path.join(output_dir, '%s'%experiment_setup, cls + '_pr.pkl'), 'wb') as f:
         pickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
+    #   print('saved results in %s'%os.path.join(output_dir, '%s'%experiment_setup))
     print(('Mean AP = {:.4f}'.format(np.mean(aps))))
     print('~~~~~~~~')
     print('Results:')
@@ -276,9 +293,9 @@ class pascal_voc(imdb):
     print(('Running:\n{}'.format(cmd)))
     status = subprocess.call(cmd, shell=True)
 
-  def evaluate_detections(self, all_boxes, output_dir):
+  def evaluate_detections(self, all_boxes, output_dir,experiment_setup=None):
     self._write_voc_results_file(all_boxes)
-    self._do_python_eval(output_dir)
+    self._do_python_eval(output_dir,experiment_setup)
     if self.config['matlab_eval']:
       self._do_matlab_eval(output_dir)
     if self.config['cleanup']:
@@ -286,7 +303,7 @@ class pascal_voc(imdb):
         if cls == '__background__':
           continue
         filename = self._get_voc_results_file_template().format(cls)
-        os.remove(filename)
+        os.remove(filename) # delete temporary results
 
   def competition_mode(self, on):
     if on:

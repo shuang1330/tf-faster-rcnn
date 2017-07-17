@@ -67,4 +67,3 @@ if [ ! -f ${NET_FINAL}.index ]; then
             --set ANCHOR_SCALES ${ANCHORS} ANCHOR_RATIOS ${RATIOS} TRAIN.STEPSIZE ${STEPSIZE} ${EXTRA_ARGS}
     fi
 fi
-

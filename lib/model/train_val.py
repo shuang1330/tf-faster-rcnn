@@ -29,7 +29,7 @@ class SolverWrapper(object):
     A wrapper class for the training process
   """
 
-  def __init__(self, sess, network, imdb, roidb, valroidb, output_dir, tbdir, pretrained_model=None):
+  def __init__(self, sess, network, imdb, roidb, valroidb, output_dir, tbdir, filter_num, pretrained_model=None):
     self.net = network
     self.imdb = imdb
     self.roidb = roidb
@@ -40,6 +40,7 @@ class SolverWrapper(object):
     self.tbvaldir = tbdir + '_val'
     if not os.path.exists(self.tbvaldir):
       os.makedirs(self.tbvaldir)
+    self.filter_num = filter_num
     self.pretrained_model = pretrained_model
 
   def snapshot(self, sess, iter):
@@ -83,7 +84,7 @@ class SolverWrapper(object):
     try:
       reader = pywrap_tensorflow.NewCheckpointReader(file_name)
       var_to_shape_map = reader.get_variable_to_shape_map()
-      return var_to_shape_map 
+      return var_to_shape_map
     except Exception as e:  # pylint: disable=broad-except
       print(str(e))
       if "corrupted compressed block contents" in str(e):
@@ -102,7 +103,8 @@ class SolverWrapper(object):
       # Build the main computation graph
       layers = self.net.create_architecture(sess, 'TRAIN', self.imdb.num_classes, tag='default',
                                             anchor_scales=cfg.ANCHOR_SCALES,
-                                            anchor_ratios=cfg.ANCHOR_RATIOS)
+                                            anchor_ratios=cfg.ANCHOR_RATIOS,
+                                            filter_num = self.filter_num)
       # Define the loss
       loss = layers['total_loss']
       # Set learning rate and momentum
@@ -159,6 +161,7 @@ class SolverWrapper(object):
       variables = tf.global_variables()
       # Initialize all variables first
       sess.run(tf.variables_initializer(variables, name='init'))
+
       var_keep_dic = self.get_variables_in_checkpoint_file(self.pretrained_model)
       variables_to_restore = []
       var_to_dic = {}
@@ -192,16 +195,16 @@ class SolverWrapper(object):
             fc6_conv = tf.get_variable("fc6_conv", [7, 7, 512, 4096], trainable=False)
             fc7_conv = tf.get_variable("fc7_conv", [1, 1, 4096, 4096], trainable=False)
             conv1_rgb = tf.get_variable("conv1_rgb", [3, 3, 3, 64], trainable=False)
-            restorer_fc = tf.train.Saver({"vgg_16/fc6/weights": fc6_conv, 
+            restorer_fc = tf.train.Saver({"vgg_16/fc6/weights": fc6_conv,
                                           "vgg_16/fc7/weights": fc7_conv,
                                           "vgg_16/conv1/conv1_1/weights": conv1_rgb})
             restorer_fc.restore(sess, self.pretrained_model)
 
-            sess.run(tf.assign(var_to_dic['vgg_16/fc6/weights:0'], tf.reshape(fc6_conv, 
+            sess.run(tf.assign(var_to_dic['vgg_16/fc6/weights:0'], tf.reshape(fc6_conv,
                                 var_to_dic['vgg_16/fc6/weights:0'].get_shape())))
-            sess.run(tf.assign(var_to_dic['vgg_16/fc7/weights:0'], tf.reshape(fc7_conv, 
+            sess.run(tf.assign(var_to_dic['vgg_16/fc7/weights:0'], tf.reshape(fc7_conv,
                                 var_to_dic['vgg_16/fc7/weights:0'].get_shape())))
-            sess.run(tf.assign(var_to_dic['vgg_16/conv1/conv1_1/weights:0'], 
+            sess.run(tf.assign(var_to_dic['vgg_16/conv1/conv1_1/weights:0'],
                                 tf.reverse(conv1_rgb, [2])))
       elif self.net._arch.startswith('res_v1'):
         print('Fix Resnet V1 layers..')
@@ -211,7 +214,6 @@ class SolverWrapper(object):
             conv1_rgb = tf.get_variable("conv1_rgb", [7, 7, 3, 64], trainable=False)
             restorer_fc = tf.train.Saver({self.net._resnet_scope + "/conv1/weights": conv1_rgb})
             restorer_fc.restore(sess, self.pretrained_model)
-
             sess.run(tf.assign(var_to_dic[self.net._resnet_scope + '/conv1/weights:0'], tf.reverse(conv1_rgb, [2])))
       else:
         # every network should fix the rgb issue at least
@@ -363,8 +365,7 @@ def filter_roidb(roidb):
                                                      num, num_after))
   return filtered_roidb
 
-
-def train_net(network, imdb, roidb, valroidb, output_dir, tb_dir,
+def train_net(network, imdb, roidb, valroidb, output_dir, tb_dir,filter_num,
               pretrained_model=None,
               max_iters=40000):
   """Train a Fast R-CNN network."""
@@ -376,7 +377,7 @@ def train_net(network, imdb, roidb, valroidb, output_dir, tb_dir,
 
   with tf.Session(config=tfconfig) as sess:
     sw = SolverWrapper(sess, network, imdb, roidb, valroidb, output_dir, tb_dir,
-                       pretrained_model=pretrained_model)
+                        filter_num,pretrained_model=pretrained_model)
     print('Solving...')
     sw.train_model(sess, max_iters)
     print('done solving')

@@ -147,6 +147,8 @@ def test_net(sess, net, imdb, weights_filename, experiment_setup=None,
   np.random.seed(cfg.RNG_SEED)
   """Test a Fast R-CNN network on an image database."""
   num_images = len(imdb.image_index)
+  # num_images = 2
+
   # all detections are collected into:
   #  all_boxes[cls][image] = N x 5 array of detections in
   #  (x1, y1, x2, y2, score)
@@ -154,6 +156,7 @@ def test_net(sess, net, imdb, weights_filename, experiment_setup=None,
          for _ in range(imdb.num_classes)]
 
   output_dir = get_output_dir(imdb, weights_filename)
+  print('using output_dir: ', output_dir)
   # timers
   _t = {'im_detect' : Timer(), 'misc' : Timer()}
 
@@ -246,7 +249,7 @@ def test_net(sess, net, imdb, weights_filename, experiment_setup=None,
     # zero_file.close()
     # chosen_classes = []
 
-    if i%100==0:
+    if i%1000==0:
         print('im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
             .format(i + 1, num_images, _t['im_detect'].average_time,
                 _t['misc'].average_time))
