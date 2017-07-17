@@ -10,7 +10,7 @@ from __future__ import print_function
 import _init_paths
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="3"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
 from model.test import test_net
@@ -64,8 +64,6 @@ if __name__ == '__main__':
   net = 'vgg16'
   comp_mode=False
   max_per_image=300
-  model = \
-  '../output/vgg16/voc_2007_trainval/default/vgg16_faster_rcnn_iter_70000.ckpt'
   set_cfgs=['ANCHOR_SCALES', '[8,16,32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
   tag = ''
 
@@ -73,11 +71,6 @@ if __name__ == '__main__':
 
   print('Using config:')
   pprint.pprint(cfg)
-
-  filename = os.path.splitext(os.path.basename(model))[0]
-
-  tag = tag if tag else 'default'
-  filename = tag + '/' + filename
 
   imdb = get_imdb(imdb_name)
   imdb.competition_mode(comp_mode)##############################
@@ -97,18 +90,40 @@ if __name__ == '__main__':
                           filter_num = (64,64,128,128,256,256,256,\
                           512,512,512,512,512,512,512))
 
-  print(('Loading model check point from {:s}').format(model))
+
   saver = tf.train.Saver()
+
+  model = '../output/vgg16/voc_2007_trainval/default/vgg16_faster_rcnn_iter_70000.ckpt'
+  print(('Loading model check point from {:s}').format(model))
   saver.restore(sess, model)
   print('Loaded.')
 
-  im_names = ['000456.jpg']
-  im_file = os.path.join(cfg.DATA_DIR, 'demo', im_names[0])
-  im = cv2.imread(im_file)
-  scores, boxes, _ = im_detect(sess, net, im)
-  print(np.array(scores).shape)
-  print(np.array(boxes).shape)
-
-  # test_net(sess, net, imdb, filename, max_per_image=max_per_image)
+  filename = None
+  test_net(sess, net, imdb,filename,
+          max_per_image=100)
 
   sess.close()
+
+  # experiements for retrained network from different pruning methods
+  # for name in ['random','classification-based']:
+  #   model = '../output/retraining/%s_iter_5000.ckpt'%name
+  #   print(('Loading model check point from {:s}').format(model))
+  #   saver.restore(sess, model)
+  #   print('Loaded.')
+  #
+  #   # test one image
+  #   # im_names = ['000456.jpg']
+  #   # im_file = os.path.join(cfg.DATA_DIR, 'demo', im_names[0])
+  #   # im = cv2.imread(im_file)
+  #   # scores, boxes, _ = im_detect(sess, net, im)
+  #   # print(np.array(scores).shape)
+  #   # print(np.array(boxes).shape)
+  #
+  #
+  #   filename = '../default/voc_2007_test/demo_pruning/experiments3'
+  #   experiment_setup = '%s'%(name)
+  #   test_net(sess, net, imdb, filename,
+  #           experiment_setup=experiment_setup,
+  #           max_per_image=100)
+  #
+  # sess.close()

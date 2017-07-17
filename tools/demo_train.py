@@ -8,7 +8,7 @@ os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="3"
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
-from model.demo_train_val import get_training_roidb, train_net
+from model.train_val import get_training_roidb, train_net
 from model.config import cfg, cfg_from_file, cfg_from_list, get_output_dir, get_output_tb_dir
 from datasets.factory import get_imdb
 import datasets.imdb
@@ -41,8 +41,25 @@ def combined_roidb(imdb_names):
     imdb = datasets.imdb.imdb(imdb_names, tmp.classes)
   else:
     imdb = get_imdb(imdb_names)
+
   return imdb, roidb
 
+def one_hot(number):
+  lis = np.zeros([21,])
+  lis[number] = 1
+  return lis
+
+def get_classification_db(roidb):
+  cla_imdb = []
+  cla_label = []
+
+  for index,roi in enumerate(roidb):
+    for box_index,box in enumerate(roi['boxes']):
+      dic = {'image':roi['image'],'box':box}
+      cla_imdb.append(dic)
+      cla_label.append(one_hot(roidb[index]['gt_classes'][box_index]))
+
+  return cla_imdb, cla_label
 
 if __name__ == '__main__':
 
@@ -52,8 +69,8 @@ if __name__ == '__main__':
   imdbval_name = 'voc_2007_test'
   tag = None
   net = 'vgg16'
-  output_dir = '/volume/home/shuang/tf-faster-rcnn/output/vgg16/voc_2007_trainval/classification'
-  tb_dir = '/volume/home/shuang/tf-faster-rcnn/tensorboard/vgg16/voc_2007_trainval/classification'
+  output_dir = '../output/vgg16/voc_2007_trainval/classification'
+  tb_dir = '../tensorboard/vgg16/voc_2007_trainval/classification'
   # weight = '../output/pruning/pruned100_5.npy' # which should I change to?
 
   if cfg_file is not None:
@@ -61,28 +78,34 @@ if __name__ == '__main__':
   if set_cfgs is not None:
     cfg_from_list(set_cfgs)
 
-  print('Using config:')
-  pprint.pprint(cfg)
+  # print('Using config:')
+  # pprint.pprint(cfg)
 
   np.random.seed(cfg.RNG_SEED)
 
   # train set
   imdb, roidb = combined_roidb(imdb_name)
-  print('{:d} roidb entries'.format(len(roidb)))
+  cla_roidb,cla_label = get_classification_db(roidb)
+  cla_train = [cla_roidb,cla_label]
+  print('{:d} roidb entries'.format(len(cla_roidb)))
+  print('{:d} roidb labels'.format(len(cla_label)))
 
   # output directory where the models are saved
-#  output_dir = get_output_dir(imdb, tag)
-  print('Output will be saved to `{:s}`'.format(output_dir))
+  # output_dir = get_output_dir(imdb, tag)
+  # print('Output will be saved to `{:s}`'.format(output_dir))
 
   # tensorboard directory where the summaries are saved during training
-  tb_dir = get_output_tb_dir(imdb, tag)
-  print('TensorFlow summaries will be saved to `{:s}`'.format(tb_dir))
+  # tb_dir = get_output_tb_dir(imdb, tag)
+  # print('TensorFlow summaries will be saved to `{:s}`'.format(tb_dir))
 
   # also add the validation set, but with no flipping images
   orgflip = cfg.TRAIN.USE_FLIPPED
   cfg.TRAIN.USE_FLIPPED = False
   _, valroidb = combined_roidb(imdbval_name)
-  print('{:d} validation roidb entries'.format(len(valroidb)))
+  cla_roidb_val,cla_label_val = get_classification_db(valroidb)
+  cls_val = [cla_roidb_val,cla_label_val]
+  print('{:d} validation roidb entries'.format(len(cla_roidb_val)))
+  print('{:d} validation roidb entries'.format(len(cla_label_val)))
   cfg.TRAIN.USE_FLIPPED = orgflip
 
   if net == 'vgg16':
@@ -90,6 +113,7 @@ if __name__ == '__main__':
   else:
     raise NotImplementedError
 
-  train_net(net, imdb, roidb, valroidb, output_dir, tb_dir,
+  raise NotImplementedError
+  train_net(net, imdb, cla_train, cla_val, output_dir, tb_dir,
             pretrained_model=weight,
             max_iters=5000)

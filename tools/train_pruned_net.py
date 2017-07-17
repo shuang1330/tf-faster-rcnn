@@ -54,7 +54,7 @@ if __name__ == '__main__':
   net = 'vgg16'
   output_dir = '../output/retraining'
   tb_dir = '/volume/home/shuang/tf-faster-rcnn/tensorboard/vgg16/voc_2007_trainval/pruned'
-  weight = '../output/pruning/classification-based_prune_conv10_to256_with_momentum.npy'
+  weight = '../output/pruning/random_prune_conv10_to256_with_momentum.npy'
 
   if cfg_file is not None:
     cfg_from_file(cfg_file)

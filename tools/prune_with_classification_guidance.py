@@ -1,5 +1,6 @@
 import os.path
 import numpy as np
+import pickle
 
 # define th CLASSES and indices
 CLASSES = ('__background__',
@@ -10,12 +11,6 @@ CLASSES = ('__background__',
            'sheep', 'sofa', 'train', 'tvmonitor')
 class_to_ind = dict(list(zip(CLASSES, list(range(len(CLASSES))))))
 SUB_CLAS = ('bicycle', 'bus', 'car','motorbike', 'person', 'train')
-
-def rankmin(x):
-    u, inv, counts = np.unique(x, return_inverse=True, return_counts=True)
-    csum = np.zeros_like(counts)
-    csum[1:] = counts[:-1].cumsum()
-    return csum[inv]
 
 def list_normalizer(ori_list):
     max_val = ori_list.max()
@@ -37,10 +32,6 @@ def detect_diff_one_layer(norm_hm_one_layer):
         if clas not in SUB_CLAS:
             ind = class_to_ind[clas]
             temp = amplifier*(norm_hm_one_layer[ind]-interest_average)
-            # print 'max: %d,min: %d'%(temp.max(),temp.min())
-            temp[temp<0.5] = 0
-            temp[temp>0.5] = 1
-            # diff_ind[clas] = np.argsort(temp)
             diff_ind += temp
     diff_ind = np.argsort(diff_ind)[::-1]
     return diff_ind
@@ -61,6 +52,8 @@ if __name__=='__main__':
     # define path for loading the activations_versus_classes array
     hm_path = './activations_res/res.npy'
     hm_sorted = detect_diff_all(hm_path)
-    for key in hm_sorted:
-        print key,hm_sorted[key].shape
-        # print key, np.count_nonzero(hm_sorted[key])
+    save_path = './activations_res/sorted_index.pkl'
+    pickle.dump(hm_sorted,open(save_path,'wb'))
+    print('Sorted index for filters are saved in %s'%save_path)
+    # for key in hm_sorted:
+        # print key,hm_sorted[key].shape
