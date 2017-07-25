@@ -23,4 +23,4 @@ data/demo
 images/
 tools/*.png
 zero_fractions/
-
+activations_res/*
