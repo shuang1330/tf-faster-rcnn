@@ -168,7 +168,7 @@ def test_net(sess, net, imdb, weights_filename, experiment_setup=None,
   # writer = tf.summary.FileWriter(test_tbdir,sess.graph)
 
   # define a folder for activation results
-  test_actdir = './activations'
+  test_actdir = '../activations_retrained'
   if not os.path.exists(test_actdir):
     os.mkdir(test_actdir)
   # define a folder for zero fractions
@@ -210,8 +210,8 @@ def test_net(sess, net, imdb, weights_filename, experiment_setup=None,
       keep = nms(cls_dets, cfg.TEST.NMS)
       cls_dets = cls_dets[keep, :]
       all_boxes[j][i] = cls_dets
-    #   if len(cls_dets)!=0: # only vgg
-    #     chosen_classes.append(imdb._classes[j])
+      if len(cls_dets)!=0: # only for recording activations_res
+        chosen_classes.append(imdb._classes[j])
 
 
     # Limit to max_per_image detections *over all classes*
@@ -226,18 +226,18 @@ def test_net(sess, net, imdb, weights_filename, experiment_setup=None,
     _t['misc'].toc()
 
     # write acts to a seperate text file for each seprate image file -> only vgg
-    # f_name = '{}/{}.txt'.format(test_actdir,i)
-    # act_file = open(f_name,'w')
-    # act_file.write('\n'.join(chosen_classes))
-    # act_file.write('\n')
-    # sum_act = []
-    # for arr in acts:
-    #   temp = np.sum(arr,axis = (0,1,2))
-    #   sum_act.append(temp)
-    # for item in sum_act:
-    #   act_file.write('{}\n'.format(str(item)))
-    # act_file.close()
-    # chosen_classes = []
+    f_name = '{}/{}.txt'.format(test_actdir,i)
+    act_file = open(f_name,'w')
+    act_file.write('\n'.join(chosen_classes))
+    act_file.write('\n')
+    sum_act = []
+    for arr in acts:
+      temp = np.sum(arr,axis = (0,1,2))
+      sum_act.append(temp)
+    for item in sum_act:
+      act_file.write('{}\n'.format(str(item)))
+    act_file.close()
+    chosen_classes = []
 
     # write zero fractions to text files -> only vgg
     # file_name = '{}/{}.txt'.format(test_zerodir,i)

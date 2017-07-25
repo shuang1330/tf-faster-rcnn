@@ -33,7 +33,7 @@ def detect_diff_one_layer(norm_hm_one_layer):
             ind = class_to_ind[clas]
             temp = amplifier*(norm_hm_one_layer[ind]-interest_average)
             diff_ind += temp
-    diff_ind = np.argsort(diff_ind)[::-1]
+    # diff_ind = np.argsort(diff_ind)[::-1]
     return diff_ind
 
 def detect_diff_all(hm_path):

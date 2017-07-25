@@ -29,7 +29,7 @@ def choose_filters(current_sum,layer_ind,heatmap_all_ind=None,random_seed = None
                     MAGNITUTE=False,RANDOM=False,CLASSIFICATION_BASED=False,
                     COMBINED = False):
     if CLASSIFICATION_BASED:
-        print 'choose pruning guided by classfiication mode'
+        print 'choose pruning guided by classification mode'
         return heatmap_all_ind['%dth_acts'%(layer_ind+1)]
     if RANDOM:
         print 'choose random pruning mode'
@@ -47,7 +47,7 @@ def choose_filters(current_sum,layer_ind,heatmap_all_ind=None,random_seed = None
         random_index = range(len(current_sum))
         shuffle(random_index)
         common_set = set(random_index[:256])&set(clas_index[:256])
-        print 'there is a common set between the random pruning and the classifcation-based methods with length %d'%len(common_set)
+        print 'there is a common set between the random pruning and the classification-based methods with length %d'%len(common_set)
         return list(common_set)
 
 def filter(dic,old_filter_num,new_filter_num,heatmap_path=None,random_seed = None,
@@ -200,7 +200,8 @@ def prune_net_for_training(tfmodel,weights_path,old_filter_num,new_filter_num,
                             continue
 
     # filter the weights
-    print 'using random seed %d'%random_seed
+    if RANDOM:
+        print 'using random seed %d'%random_seed
     dic = filter(dic,old_filter_num,new_filter_num,heatmap_path,random_seed,
                  RANDOM,MAGNITUTE,CLASSIFICATION_BASED,COMBINED)
     # raise NotImplementedError

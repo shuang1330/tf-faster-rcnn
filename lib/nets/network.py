@@ -21,6 +21,22 @@ from layer_utils.anchor_target_layer import anchor_target_layer
 from layer_utils.proposal_target_layer import proposal_target_layer
 
 from model.config import cfg
+from pruning.activation_pruning import detect_diff_all
+
+def activations_penalty_generator(x):
+  # amplifier = 1.
+  x[x<0] = 0
+  penalty = tf.constant(x,tf.float32)
+  return penalty
+
+def activations_diff(hm_path):
+  diff = detect_diff_all(hm_path,RANKING=False)
+  return diff
+
+def normed_sum(tensor):
+  t_min, t_max = tf.reduce_min(tensor),tf.reduce_max(tensor)
+  tensor = (tensor-t_min)/(t_max-t_min)
+  return tensor
 
 class Network(object):
   def __init__(self, batch_size=1):
@@ -290,12 +306,23 @@ class Network(object):
                                       bbox_inside_weights,
                                       bbox_outside_weights)
 
+      # activation, regularization
+      activation_loss = tf.Variable(0.,tf.float32,name='act_loss')
+      for acts in self._act:
+        sums_featuremaps = tf.reduce_sum(acts,(0,1,2))
+        sums_featuremaps = normed_sum(sums_featuremaps)
+        weighted_sums_featuremaps = tf.sigmoid(sums_featuremaps) * \
+                                   (1-tf.sigmoid(sums_featuremaps))
+        activation_loss += tf.reduce_mean(weighted_sums_featuremaps)
+
+      beta = tf.constant(0.1, tf.float32)
+      self._losses['activations'] = beta*activation_loss
       self._losses['cross_entropy'] = cross_entropy
       self._losses['loss_box'] = loss_box
       self._losses['rpn_cross_entropy'] = rpn_cross_entropy
       self._losses['rpn_loss_box'] = rpn_loss_box
-
-      loss = cross_entropy + loss_box + rpn_cross_entropy + rpn_loss_box
+      loss = cross_entropy + loss_box + rpn_cross_entropy + \
+             rpn_loss_box + self._losses['activations']
       self._losses['total_loss'] = loss
 
       self._event_summaries.update(self._losses)
@@ -415,29 +442,31 @@ class Network(object):
     feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],
                  self._gt_boxes: blobs['gt_boxes']}
     rpn_loss_cls, rpn_loss_box, \
-    loss_cls, loss_box, loss, _ = sess.run([self._losses["rpn_cross_entropy"],
+    loss_cls, loss_box, act_loss, loss, _ = sess.run([self._losses["rpn_cross_entropy"],
                                     self._losses['rpn_loss_box'],
                                     self._losses['cross_entropy'],
                                     self._losses['loss_box'],
+                                    self._losses['activations'],
                                     self._losses['total_loss'],
                                     train_op],
                                     feed_dict=feed_dict)
-    return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, loss
+    return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, act_loss, loss
 
   def train_step_with_summary(self, sess, blobs, train_op):
     feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],
                  self._gt_boxes: blobs['gt_boxes']}
     rpn_loss_cls, rpn_loss_box, \
-        loss_cls, loss_box, loss, summary, _ = \
+        loss_cls, loss_box, act_loss, loss, summary, _ = \
             sess.run([self._losses["rpn_cross_entropy"],
                       self._losses['rpn_loss_box'],
                       self._losses['cross_entropy'],
                       self._losses['loss_box'],
+                      self._losses['activations'],
                       self._losses['total_loss'],
                       self._summary_op,
                       train_op],
                       feed_dict=feed_dict)
-    return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, loss, summary
+    return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, act_loss, loss, summary
 
   def train_step_no_return(self, sess, blobs, train_op):
     feed_dict = {self._image: blobs['data'],

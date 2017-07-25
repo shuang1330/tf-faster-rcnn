@@ -39,7 +39,7 @@ __C.TRAIN.DISPLAY = 10
 # Whether to double the learning rate for bias
 __C.TRAIN.DOUBLE_BIAS = True
 
-# Whether to initialize the weights with truncated normal distribution 
+# Whether to initialize the weights with truncated normal distribution
 __C.TRAIN.TRUNCATED = False
 
 # Whether to have weight decay on bias as well
@@ -147,11 +147,14 @@ __C.TRAIN.RPN_BBOX_INSIDE_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 # and give negatives a weight of (1 - p)
 # Set to -1.0 to use uniform example weighting
 __C.TRAIN.RPN_POSITIVE_WEIGHT = -1.0
-# Whether to use all ground truth bounding boxes for training, 
+# Whether to use all ground truth bounding boxes for training,
 # For COCO, setting USE_ALL_GT to False will exclude boxes that are flagged as ''iscrowd''
 __C.TRAIN.USE_ALL_GT = True
 
+# Whether to tune the batch normalization parameters during training
+__C.TRAIN.BN_TRAIN = False
 #
+
 # Testing options
 #
 __C.TEST = edict()
@@ -204,8 +207,8 @@ __C.TEST.RPN_TOP_N = 5000
 
 __C.RESNET = edict()
 
-# Option to set if max-pooling is appended after crop_and_resize. 
-# if true, the region will be resized to a squre of 2xPOOLING_SIZE, 
+# Option to set if max-pooling is appended after crop_and_resize.
+# if true, the region will be resized to a squre of 2xPOOLING_SIZE,
 # then 2x2 max-pooling is applied; otherwise the region will be directly
 # resized to a square of POOLING_SIZE
 __C.RESNET.MAX_POOL = False
