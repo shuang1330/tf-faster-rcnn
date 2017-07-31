@@ -6,11 +6,11 @@ from __future__ import division
 import _init_paths
 from datasets.factory import get_imdb
 from model.test import test_net
-from nets.vgg16 import vgg16
+from nets.vgg16_noBN import vgg16
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
+os.environ["CUDA_VISIBLE_DEVICES"]="4"
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
 import tensorflow as tf
@@ -41,12 +41,15 @@ if __name__=='__main__':
 
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-    for index_of_layer in range(10,11): # different layer
+    for index_of_layer in range(1,10): # different layer
         new_filter_num = [64,64,128,128,256,256,256,512,512,512,512,512,512,512]
-        for num_of_filter in [0.5]: # different filters for each layer
-            new_filter_num[index_of_layer] = int(new_filter_num[index_of_layer]*num_of_filter)
+	for random_seed in [200]:
+#        for num_of_filter in [0.5]: # different filters for each layer
+            new_filter_num = [64,64,128,128,256,256,256,512,512,512,512,512,512,512]
+            num_of_filter = 0.5  
+	    new_filter_num[index_of_layer] = int(new_filter_num[index_of_layer]*num_of_filter)
             print 'The new graph is: ',new_filter_num
-            # load the new grph
+            # load the new graph
             tfconfig = tf.ConfigProto(allow_soft_placement=True)
             tfconfig.gpu_options.allow_growth=True
             with tf.Graph().as_default() as g2:
@@ -57,17 +60,19 @@ if __name__=='__main__':
                                             filter_num = new_filter_num)
                     saver = tf.train.Saver()
                     # different pruning method
-                    for method in ['classification-based']:
+                    for method in ['random']:
                         weights_name = '%s_prune_conv%d_to%d_with_momentum.ckpt'%(
                             method,index_of_layer,new_filter_num[index_of_layer])
                         weights_path = os.path.join(folder_path,weights_name)
                         if method=='random':
-                            RANDOM,MAGNITUTE,CLASSIFICATION_BASED=True,False,False
+                            RANDOM,MAGNITUTE,CLASSIFICATION_BASED,COMBINED=True,False,False,False
                         elif method=='magnitute':
-                            RANDOM,MAGNITUTE,CLASSIFICATION_BASED=False,True,False
+                            RANDOM,MAGNITUTE,CLASSIFICATION_BASED,COMBINED=False,True,False,False
                         elif method=='classification-based':
-                            RANDOM,MAGNITUTE,CLASSIFICATION_BASED=False,False,True
+                            RANDOM,MAGNITUTE,CLASSIFICATION_BASED,COMBINED=False,False,True,False
                             heatmap_path = './activations_res/res.npy'
+                        elif method=='combined':
+                            RANDOM,MAGNITUTE,CLASSIFICATION_BASED,COMBINED=False,False,False,True
                         else:
                             raise IOError('No method is chosen')
                         weights_dic=prune_net_for_training(tfmodel,
@@ -75,9 +80,11 @@ if __name__=='__main__':
                                                 old_filter_num,
                                                 new_filter_num,
                                                 heatmap_path=heatmap_path,
+						random_seed=random_seed,	
                                                 SAVE=False,RANDOM=RANDOM,
                                                 MAGNITUTE=MAGNITUTE,
-                                                CLASSIFICATION_BASED=CLASSIFICATION_BASED)
+                                                CLASSIFICATION_BASED=CLASSIFICATION_BASED,
+						COMBINED=COMBINED)
 
                         # load the new weights from npy file
                         # weights_dic = np.load(weights_path).item()
@@ -89,12 +96,12 @@ if __name__=='__main__':
                         print 'assigned pruned weights to the pruned model'
                         if True:
                             saver.save(sess,weights_path)
-                        raise NotImplementedError
                         # test the new model
                         imdb = get_imdb('voc_2007_test')
-                        filename = 'demo_pruning/experiments2'
-                        experiment_setup = '%s/random_seed100/layer%d/to%d'%(method,
-                                                index_of_layer,
+                        filename = 'demo_pruning/experiments_random_average'
+                        experiment_setup = '%s/random_seed%d/layer%d/to%d'%(method,
+                                                random_seed, 
+						index_of_layer,
                                                 new_filter_num[index_of_layer])
                         test_net(sess, net, imdb, filename,
                                 experiment_setup=experiment_setup,

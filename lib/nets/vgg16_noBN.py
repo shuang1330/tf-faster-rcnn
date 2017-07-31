@@ -1,7 +1,7 @@
 # --------------------------------------------------------
-# batch normalization: yes
+# BN: no
+# RELU: yes
 # l2 regularization: yes
-# RELU activation function
 # --------------------------------------------------------
 from __future__ import absolute_import
 from __future__ import division
@@ -13,33 +13,34 @@ from tensorflow.contrib.slim import losses
 from tensorflow.contrib.slim import arg_scope
 import numpy as np
 
-from nets.network_logistic_penalty import Network
+from nets.network_noACT_penalty import Network
 from model.config import cfg
 
 def vgg_arg_scope(is_training=True,
-                     weight_decay=cfg.TRAIN.WEIGHT_DECAY,
-                     batch_norm_decay=0.997,
-                     batch_norm_epsilon=1e-5,
-                     batch_norm_scale=True):
-  batch_norm_params = {
-    'is_training': cfg.TRAIN.BN_TRAIN and is_training,
-    'decay': batch_norm_decay,
-    'epsilon': batch_norm_epsilon,
-    'scale': batch_norm_scale,
-    'trainable': cfg.TRAIN.BN_TRAIN,
-    'updates_collections': tf.GraphKeys.UPDATE_OPS
-  }
+                     weight_decay=cfg.TRAIN.WEIGHT_DECAY):
+#                     batch_norm_decay=0.997,
+#                     batch_norm_epsilon=1e-5,
+#                     batch_norm_scale=True):
+#  batch_norm_params = {
+#    'is_training': cfg.TRAIN.BN_TRAIN and is_training,
+#    'decay': batch_norm_decay,
+#    'epsilon': batch_norm_epsilon,
+#    'scale': batch_norm_scale,
+#    'trainable': cfg.TRAIN.BN_TRAIN,
+#    'updates_collections': tf.GraphKeys.UPDATE_OPS
+#  }
 
   with arg_scope(
       [slim.conv2d],
       weights_regularizer=slim.l2_regularizer(weight_decay),
       weights_initializer=slim.variance_scaling_initializer(),
       trainable=is_training,
-      activation_fn=tf.nn.relu,
-      normalizer_fn=slim.batch_norm,
-      normalizer_params=batch_norm_params):
-    with arg_scope([slim.batch_norm], **batch_norm_params) as arg_sc:
-      return arg_sc
+      activation_fn=tf.nn.relu) as arg_sc:
+ #     normalizer_fn=slim.batch_norm,
+ #     normalizer_params=batch_norm_params):
+ #   with arg_scope([slim.batch_norm], **batch_norm_params) as arg_sc:
+ #     return arg_sc
+    return arg_sc
 
 class vgg16(Network):
   def __init__(self, batch_size=1):

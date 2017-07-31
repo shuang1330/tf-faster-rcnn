@@ -1,7 +1,6 @@
 # --------------------------------------------------------
-# Tensorflow Faster R-CNN
-# Licensed under The MIT License [see LICENSE for details]
-# Written by Xinlei Chen and Zheqi He
+# initialization needs improvement TODO
+# control_class: yes 
 # --------------------------------------------------------
 from __future__ import absolute_import
 from __future__ import division
@@ -36,7 +35,7 @@ class SolverWrapper(object):
     self.roidb = roidb
     self.valroidb = valroidb
     self.output_dir = output_dir
-    self.output_dir_penalty = '/volume/home/shuang/tf-faster-rcnn/output/vgg16/voc_2007_trainval/logistic_penalty'
+    self.output_dir_penalty = '/home/shuang/tf-faster-rcnn/output/vgg16/voc_2007_trainval/logistic_penalty'
     self.tbdir = tbdir
     # Simply put '_val' at the end to save the summaries from the validation set
     self.tbvaldir = tbdir + '_val'
@@ -201,27 +200,27 @@ class SolverWrapper(object):
       # Initialize all variables first
       sess.run(tf.variables_initializer(variables, name='init'))
 
-      var_keep_dic = self.get_variables_in_checkpoint_file(self.pretrained_model)
-      variables_to_restore = []
-      var_to_dic = {}
-
-      for v in variables:
-        # exclude the conv weights that are fc weights in vgg16
-        if v.name == 'vgg_16/fc6/weights:0' or v.name == 'vgg_16/fc7/weights:0':
-          var_to_dic[v.name] = v
-          continue
-        # exclude the first conv layer to swap RGB to BGR
-        if v.name == 'vgg_16/conv1/conv1_1/weights:0' or \
-           v.name == 'resnet_v1_50/conv1/weights:0' or \
-           v.name == 'resnet_v1_101/conv1/weights:0' or \
-           v.name == 'resnet_v1_152/conv1/weights:0':
-          var_to_dic[v.name] = v
-          continue
-        if v.name.split(':')[0] in var_keep_dic:
-          print('Varibles restored: %s' % v.name)
-          variables_to_restore.append(v)
-
-      restorer = tf.train.Saver(variables_to_restore)
+#      var_keep_dic = self.get_variables_in_checkpoint_file(self.pretrained_model)
+#      variables_to_restore = []
+#      var_to_dic = {}
+#
+#      for v in variables:
+#        # exclude the conv weights that are fc weights in vgg16
+#        if v.name == 'vgg_16/fc6/weights:0' or v.name == 'vgg_16/fc7/weights:0':
+#          var_to_dic[v.name] = v
+#          continue
+#        # exclude the first conv layer to swap RGB to BGR
+#        if v.name == 'vgg_16/conv1/conv1_1/weights:0' or \
+#           v.name == 'resnet_v1_50/conv1/weights:0' or \
+#           v.name == 'resnet_v1_101/conv1/weights:0' or \
+#           v.name == 'resnet_v1_152/conv1/weights:0':
+#          var_to_dic[v.name] = v
+#          continue
+#        if v.name.split(':')[0] in var_keep_dic:
+#          print('Varibles restored: %s' % v.name)
+#          variables_to_restore.append(v)
+#
+      restorer = tf.train.Saver()
       restorer.restore(sess, self.pretrained_model)
       print('Loaded.')
       sess.run(tf.assign(lr, cfg.TRAIN.LEARNING_RATE))
@@ -304,7 +303,8 @@ class SolverWrapper(object):
     #     self.data_layer_val._perm = perm_val
 
         # Set the learning rate, only reduce once
-      last_snapshot_iter = 70000
+      last_snapshot_iter = int(ss_paths[-1][-10:-5])
+      print('restore snapshot from %s'%ss_paths[-1])
       if last_snapshot_iter > cfg.TRAIN.STEPSIZE:
         sess.run(tf.assign(lr, cfg.TRAIN.LEARNING_RATE * cfg.TRAIN.GAMMA))
       else:
@@ -362,8 +362,9 @@ class SolverWrapper(object):
           to_remove = len(np_paths) - cfg.TRAIN.SNAPSHOT_KEPT
           for c in range(to_remove):
             nfile = np_paths[0]
-            os.remove(str(nfile))
-            np_paths.remove(nfile)
+	    if '70000' not in nfile:
+              os.remove(str(nfile))
+              np_paths.remove(nfile)
 
         if len(ss_paths) > cfg.TRAIN.SNAPSHOT_KEPT:
           to_remove = len(ss_paths) - cfg.TRAIN.SNAPSHOT_KEPT

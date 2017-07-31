@@ -1,7 +1,6 @@
 # --------------------------------------------------------
-# Tensorflow Faster R-CNN
-# Licensed under The MIT License [see LICENSE for details]
-# Written by Xinlei Chen
+# network without ACT loss
+# network returning ACT values
 # --------------------------------------------------------
 from __future__ import absolute_import
 from __future__ import division
@@ -423,13 +422,14 @@ class Network(object):
   def test_image(self, sess, image, im_info):
     feed_dict = {self._image: image,
                  self._im_info: im_info}
-    cls_score, cls_prob, bbox_pred, rois = \
+    cls_score, cls_prob, bbox_pred, rois, acts = \
     sess.run([self._predictions["cls_score"],
     self._predictions['cls_prob'],
     self._predictions['bbox_pred'],
-    self._predictions['rois']],
+    self._predictions['rois'],
+    self._act],
     feed_dict=feed_dict)
-    return cls_score, cls_prob, bbox_pred, rois
+    return cls_score, cls_prob, bbox_pred, rois, acts
 
   def get_summary(self, sess, blobs):
     feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],

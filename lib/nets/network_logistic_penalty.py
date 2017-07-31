@@ -307,23 +307,32 @@ class Network(object):
                                       bbox_outside_weights)
 
       # activation, regularization
-#      activation_loss = tf.Variable(0.,tf.float32,name='act_loss')
-#      for acts in self._act:
-#        sums_featuremaps = tf.reduce_sum(acts,(0,1,2))
-#        sums_featuremaps = normed_sum(sums_featuremaps)
-#        weighted_sums_featuremaps = tf.sigmoid(sums_featuremaps) * \
-#                                   (1-tf.sigmoid(sums_featuremaps))
-#        activation_loss += tf.reduce_mean(weighted_sums_featuremaps)
-#
-#      beta = tf.constant(0.1, tf.float32)
-#      self._losses['activations'] = beta*activation_loss
-#      self._losses['cross_entropy'] = cross_entropy
+      activation_loss = tf.Variable(0.,tf.float32,name='act_loss')
+      for i in range(len(self._act)):
+	if i == 1 or i == 3 or i ==2:
+	  continue
+	else:
+	  sums_featuremaps = tf.reduce_sum(self._act[i],(0,1,2))
+          sums_featuremaps = normed_sum(sums_featuremaps)
+          weighted_sums_featuremaps = tf.sigmoid(sums_featuremaps) * \
+                                     (1-tf.sigmoid(sums_featuremaps))
+          activation_loss += tf.reduce_mean(weighted_sums_featuremaps)
+
+      for acts in self._act:
+        sums_featuremaps = tf.reduce_sum(acts,(0,1,2))
+        sums_featuremaps = normed_sum(sums_featuremaps)
+        weighted_sums_featuremaps = tf.sigmoid(sums_featuremaps) * \
+                                   (1-tf.sigmoid(sums_featuremaps))
+        activation_loss += tf.reduce_mean(weighted_sums_featuremaps)
+
+      beta = tf.constant(0.01, tf.float32)
+      self._losses['activations'] = beta*activation_loss
+      self._losses['cross_entropy'] = cross_entropy
       self._losses['loss_box'] = loss_box
       self._losses['rpn_cross_entropy'] = rpn_cross_entropy
       self._losses['rpn_loss_box'] = rpn_loss_box
-#      loss = cross_entropy + loss_box + rpn_cross_entropy + \
-#             rpn_loss_box + self._losses['activations']
-      loss = cross_entropy + loss_box + rpn_cross_entropy + rpn_loss_box
+      loss = cross_entropy + loss_box + rpn_cross_entropy + \
+             rpn_loss_box + self._losses['activations']
       self._losses['total_loss'] = loss
 
       self._event_summaries.update(self._losses)
@@ -423,13 +432,14 @@ class Network(object):
   def test_image(self, sess, image, im_info):
     feed_dict = {self._image: image,
                  self._im_info: im_info}
-    cls_score, cls_prob, bbox_pred, rois = \
-    sess.run([self._predictions["cls_score"],
-    self._predictions['cls_prob'],
-    self._predictions['bbox_pred'],
-    self._predictions['rois']],
+    cls_score, cls_prob, bbox_pred, rois, acts = \
+    sess.run([self._predictions["cls_score"],\
+    self._predictions['cls_prob'],\
+    self._predictions['bbox_pred'],\
+    self._predictions['rois'],\
+    self._act],\
     feed_dict=feed_dict)
-    return cls_score, cls_prob, bbox_pred, rois
+    return cls_score, cls_prob, bbox_pred, rois, acts
 
   def get_summary(self, sess, blobs):
     feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],
@@ -442,31 +452,31 @@ class Network(object):
     feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],
                  self._gt_boxes: blobs['gt_boxes']}
     rpn_loss_cls, rpn_loss_box, \
-    loss_cls, loss_box,  loss, _ = sess.run([self._losses["rpn_cross_entropy"],
+    loss_cls, loss_box, act_loss, loss, _ = sess.run([self._losses["rpn_cross_entropy"],
                                     self._losses['rpn_loss_box'],
                                     self._losses['cross_entropy'],
                                     self._losses['loss_box'],
-#                                    self._losses['activations'],
+                                    self._losses['activations'],
                                     self._losses['total_loss'],
                                     train_op],
                                     feed_dict=feed_dict)
-    return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, loss
+    return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, act_loss, loss
 
   def train_step_with_summary(self, sess, blobs, train_op):
     feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],
                  self._gt_boxes: blobs['gt_boxes']}
     rpn_loss_cls, rpn_loss_box, \
-        loss_cls, loss_box, loss, summary, _ = \
+        loss_cls, loss_box, act_loss, loss, summary, _ = \
             sess.run([self._losses["rpn_cross_entropy"],
                       self._losses['rpn_loss_box'],
                       self._losses['cross_entropy'],
                       self._losses['loss_box'],
-#                      self._losses['activations'],
+                      self._losses['activations'],
                       self._losses['total_loss'],
                       self._summary_op,
                       train_op],
                       feed_dict=feed_dict)
-    return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, loss, summary
+    return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, act_loss, loss, summary
 
   def train_step_no_return(self, sess, blobs, train_op):
     feed_dict = {self._image: blobs['data'],

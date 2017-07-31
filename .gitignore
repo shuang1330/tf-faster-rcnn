@@ -1,3 +1,6 @@
+activations_original/*
+activations_penalty0.01_iter170000/*
+activations_penalty0.01_iter200000/*
 *.ipynb_checkpoints*
 tools/activations_res/*
 *.tgz

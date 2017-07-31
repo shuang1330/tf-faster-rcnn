@@ -10,16 +10,16 @@ from __future__ import print_function
 import _init_paths
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="3"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
-from model.test import test_net
+from model.test_recordACT import test_net
 from model.config import cfg, cfg_from_file, cfg_from_list
 from datasets.factory import get_imdb
 import argparse
 import pprint
 import time, os, sys
-import os, cv2
+import os
 from model.test import im_detect
 import numpy as np
 
@@ -93,13 +93,14 @@ if __name__ == '__main__':
 
   saver = tf.train.Saver()
 
-  model = '../output/vgg16/voc_2007_trainval/logistic_penalty/vgg16_faster_rcnn_iter_90000.ckpt'
+  model = '../output/vgg16/voc_2007_trainval/penalty_0.01/vgg16_faster_rcnn_iter_200000.ckpt'
   print(('Loading model check point from {:s}').format(model))
   saver.restore(sess, model)
   print('Loaded.')
 
   filename = None
-  test_net(sess, net, imdb,filename,max_per_image=100)
+  experiment_setup = 'penalty_0.1_iter_200000'
+  test_net(sess, net, imdb,filename,max_per_image=100,experiment_setup=experiment_setup)
 
   sess.close()
 

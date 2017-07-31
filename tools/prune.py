@@ -20,7 +20,7 @@ import collections
 from random import shuffle
 import random
 
-from nets.vgg16 import vgg16
+from nets.vgg16_noBN import vgg16
 from tensorflow.python import pywrap_tensorflow
 from prune_with_classification_guidance import detect_diff_all
 
