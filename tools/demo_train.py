@@ -52,8 +52,8 @@ if __name__ == '__main__':
   imdbval_name = 'voc_2007_test'
   tag = None
   net = 'vgg16'
-  output_dir = '../output/vgg16/voc_2007_trainval/penalty_0.01'
-  tb_dir = '../tensorboard/vgg16/voc_2007_trainval/penalty_0.01_high_layers'
+  output_dir = '../output/vgg16/voc_2007_trainval/penalty_0001_high_layers'
+  tb_dir = '../tensorboard/vgg16/voc_2007_trainval/penalty_00001_high_layers'
   weight = '../data/imagenet_weights/vgg16.ckpt'
 
   if cfg_file is not None:
@@ -92,4 +92,4 @@ if __name__ == '__main__':
   filter_num = [64,64,128,128,256,256,256,512,512,512,512,512,512,512]
   train_net(net, imdb, roidb, valroidb, output_dir, tb_dir,filter_num,
             pretrained_model=weight,
-            max_iters=400000)
+            max_iters=200000)

@@ -325,7 +325,7 @@ class Network(object):
                                    (1-tf.sigmoid(sums_featuremaps))
         activation_loss += tf.reduce_mean(weighted_sums_featuremaps)
 
-      beta = tf.constant(0.01, tf.float32)
+      beta = tf.constant(0.001, tf.float32)
       self._losses['activations'] = beta*activation_loss
       self._losses['cross_entropy'] = cross_entropy
       self._losses['loss_box'] = loss_box

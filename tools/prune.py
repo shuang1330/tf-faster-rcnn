@@ -30,7 +30,7 @@ def choose_filters(current_sum,layer_ind,heatmap_all_ind=None,random_seed = None
                     COMBINED = False):
     if CLASSIFICATION_BASED:
         print 'choose pruning guided by classification mode'
-        return heatmap_all_ind['%dth_acts'%(layer_ind+1)]
+        return heatmap_all_ind['%dth_layer'%(layer_ind-1)]
     if RANDOM:
         print 'choose random pruning mode'
         random.seed(random_seed)
@@ -80,7 +80,7 @@ def filter(dic,old_filter_num,new_filter_num,heatmap_path=None,random_seed = Non
         heatmap_all_ind = detect_diff_all(heatmap_path)
     current_ind = 0
     pre_ind = 0
-    if diff[0] != 0: # for the oth layer
+    if diff[0] != 0: # for the 0th layer
         current_sum = np.sum(weights[0], axis = (0,1,2))
         current_ind = choose_filters(current_sum,0,heatmap_all_ind,
                                     random_seed,
@@ -112,7 +112,7 @@ def filter(dic,old_filter_num,new_filter_num,heatmap_path=None,random_seed = Non
                                         RANDOM=RANDOM,MAGNITUTE=MAGNITUTE,
                                         CLASSIFICATION_BASED=CLASSIFICATION_BASED,
                                         COMBINED=COMBINED)
-            # print current_ind
+            print len(current_ind)
             weights[ind] = np.delete(weights[ind], current_ind[:diff[ind]],
                                     axis = 3)
             biases[ind] = np.delete(biases[ind],current_ind[:diff[ind]],
@@ -226,7 +226,7 @@ if __name__ == '__main__':
     # Below are variables that needs checking every time
     num_classes = 21
     old_filter_num = (64,64,128,128,256,256,256,512,512,512,512,512,512,512)
-    new_filter_num = (64,64,64,128,256,256,256,512,512,512,512,512,512,512)
+    new_filter_num = (64,64,128,128,256,256,256,512,512,512,512,512,512,512)
     names = ('weights','biases')
     # Defined path for loading original weights from ckpy files
     demonet = 'vgg16_faster_rcnn_iter_70000.ckpt'

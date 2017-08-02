@@ -41,9 +41,9 @@ if __name__=='__main__':
 
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-    for index_of_layer in range(1,10): # different layer
+    for index_of_layer in range(10): # different layer
         new_filter_num = [64,64,128,128,256,256,256,512,512,512,512,512,512,512]
-	for random_seed in [200]:
+	for random_seed in [99999]:
 #        for num_of_filter in [0.5]: # different filters for each layer
             new_filter_num = [64,64,128,128,256,256,256,512,512,512,512,512,512,512]
             num_of_filter = 0.5  
@@ -60,7 +60,7 @@ if __name__=='__main__':
                                             filter_num = new_filter_num)
                     saver = tf.train.Saver()
                     # different pruning method
-                    for method in ['random']:
+                    for method in ['classification-based']:
                         weights_name = '%s_prune_conv%d_to%d_with_momentum.ckpt'%(
                             method,index_of_layer,new_filter_num[index_of_layer])
                         weights_path = os.path.join(folder_path,weights_name)
@@ -70,7 +70,7 @@ if __name__=='__main__':
                             RANDOM,MAGNITUTE,CLASSIFICATION_BASED,COMBINED=False,True,False,False
                         elif method=='classification-based':
                             RANDOM,MAGNITUTE,CLASSIFICATION_BASED,COMBINED=False,False,True,False
-                            heatmap_path = './activations_res/res.npy'
+                            heatmap_path = './activations_res/classification-based_res.npy'
                         elif method=='combined':
                             RANDOM,MAGNITUTE,CLASSIFICATION_BASED,COMBINED=False,False,False,True
                         else:
@@ -98,7 +98,7 @@ if __name__=='__main__':
                             saver.save(sess,weights_path)
                         # test the new model
                         imdb = get_imdb('voc_2007_test')
-                        filename = 'demo_pruning/experiments_random_average'
+                        filename = 'experiments_redo'
                         experiment_setup = '%s/random_seed%d/layer%d/to%d'%(method,
                                                 random_seed, 
 						index_of_layer,

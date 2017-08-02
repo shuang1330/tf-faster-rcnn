@@ -13,7 +13,7 @@ os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="2"
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
-from model.test_recordACT import test_net
+from model.test import test_net
 from model.config import cfg, cfg_from_file, cfg_from_list
 from datasets.factory import get_imdb
 import argparse
@@ -24,7 +24,7 @@ from model.test import im_detect
 import numpy as np
 
 import tensorflow as tf
-from nets.vgg16 import vgg16
+from nets.vgg16_noBN import vgg16
 
 def vis_detections(im, class_name, dets, thresh=0.5):
     """Draw detected bounding boxes."""
@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
   saver = tf.train.Saver()
 
-  model = '../output/vgg16/voc_2007_trainval/penalty_0.01/vgg16_faster_rcnn_iter_200000.ckpt'
+  model = '../output/vgg16/voc_2007_trainval/default/vgg16_faster_rcnn_iter_70000.ckpt'
   print(('Loading model check point from {:s}').format(model))
   saver.restore(sess, model)
   print('Loaded.')

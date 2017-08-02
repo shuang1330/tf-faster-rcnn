@@ -1,4 +1,4 @@
-# --------------------------------------------------------
+#--------------------------------------------------------
 # BN: no
 # RELU: yes
 # l2 regularization: yes
@@ -13,7 +13,7 @@ from tensorflow.contrib.slim import losses
 from tensorflow.contrib.slim import arg_scope
 import numpy as np
 
-from nets.network_noACT_penalty import Network
+from nets.network import Network
 from model.config import cfg
 
 def vgg_arg_scope(is_training=True,
